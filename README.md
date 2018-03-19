@@ -6,3 +6,4 @@ Original code modified from https://github.com/kanesurendra/echo-pi.
 ### Required Libraries
 
 - https://github.com/studioimaginaire/phue
+- https://github.com/SoCo/SoCo
