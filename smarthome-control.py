@@ -21,6 +21,18 @@ logging.basicConfig(level=logging.INFO)
 hue_bridge = Bridge('10.0.1.2')
 hue_bridge.connect()
 
+# Join all Sonos Speakers into a Single Group
+class SetupSpeakersTask(Thread):
+    def run(self):
+        logging.info("Setting up Speaker Group")
+        speakers = list(soco.discover())
+        master = speakers.pop()
+        for speaker in speakers:
+            logging.info("Adding " + speaker.player_name + " to " + master.player_name)
+            speaker.unjoin()
+            speaker.join(master.group.coordinator)
+        master.group.coordinator.play()
+
 # Stop all Sonos Speakers
 class StopMusicTask(Thread):
     def run(self):
@@ -43,7 +55,8 @@ class SetupBedroomLightingTask(Thread):
 
 class device_handler(debounce_handler):
     TRIGGERS = {
-        "Setup Reading in Bed": 50100
+        "Setup Reading in Bed": 50100,
+        "All Speakers": 50101
     }
 
     def trigger_reading_in_bed(self, state):
@@ -56,9 +69,18 @@ class device_handler(debounce_handler):
             bedroom_lighting = SetupBedroomLightingTask()
             bedroom_lighting.start()
 
+    def trigger_all_speakers(self, state):
+        if state == True:
+            setup_speakers = SetupSpeakersTask()
+            setup_speakers.start()
+        else:
+            stop_music = StopMusicTask()
+            stop_music.start()
+
     def trigger(self, port, state):
         actions = {
-            50100: self.trigger_reading_in_bed
+            50100: self.trigger_reading_in_bed,
+            50101: self.trigger_all_speakers
         }
         actions[port](state)
 
